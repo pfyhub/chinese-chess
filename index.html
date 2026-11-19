@@ -64,7 +64,19 @@
 
     <main class="app">
       <section class="board-wrap">
-        <canvas id="board" aria-label="象棋棋盘"></canvas>
+        <div class="board-stage">
+          <canvas id="board" aria-label="象棋棋盘"></canvas>
+
+          <div class="victory" id="victory" hidden role="alert">
+            <div class="victory-glow" aria-hidden="true"></div>
+            <div class="victory-card" id="victory-card" data-side="red">
+              <p class="victory-kicker" id="victory-kicker">绝 杀</p>
+              <h2 class="victory-title" id="victory-title">红方胜</h2>
+              <p class="victory-sub" id="victory-sub">将死</p>
+              <button class="victory-close" id="victory-close" type="button">再来一局</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <aside class="panel">

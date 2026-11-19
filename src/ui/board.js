@@ -58,9 +58,9 @@ export function renderBoard(canvas, game, view) {
 
 function fitCanvas(canvas, ctx) {
   const dpr = window.devicePixelRatio || 1;
-  const parentWidth = canvas.parentElement
-    ? canvas.parentElement.clientWidth
-    : BASE_W;
+  // 以最外层容器为准，避免量到跟随 canvas 尺寸的包裹层
+  const host = canvas.closest(".board-wrap") || canvas.parentElement;
+  const parentWidth = host ? host.clientWidth : BASE_W;
   const available = Math.max(280, parentWidth);
   const scale = Math.min(1, available / BASE_W);
 

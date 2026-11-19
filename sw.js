@@ -1,5 +1,5 @@
 /* Service Worker for 象棋 PWA — offline-first strategy */
-const CACHE_VERSION = "xiangqi-v1";
+const CACHE_VERSION = "xiangqi-v2";
 const STATIC_ASSETS = [
   "./",
   "./index.html",

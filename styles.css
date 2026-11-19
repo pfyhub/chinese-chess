@@ -56,6 +56,14 @@ body {
   min-width: 0;
 }
 
+/* 包裹层：尺寸跟随 canvas，供胜利特效精准覆盖棋盘 */
+.board-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
 canvas {
   display: block;
   border-radius: 16px;
@@ -530,6 +538,107 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   text-align: center;
+}
+
+/* ===== 绝杀 / 获胜特效 ===== */
+.victory {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 45%, rgba(43, 33, 23, 0.18), rgba(43, 33, 23, 0.58));
+  animation: victory-fade 0.28s ease-out both;
+}
+
+.victory-glow {
+  position: absolute;
+  width: min(76%, 340px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(176, 122, 51, 0.42), rgba(176, 122, 51, 0) 68%);
+  animation: victory-pulse 1.9s ease-in-out infinite;
+}
+
+.victory-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 34px 22px;
+  text-align: center;
+  background: rgba(255, 252, 245, 0.97);
+  border: 2px solid var(--accent);
+  border-radius: 18px;
+  box-shadow: 0 18px 46px rgba(43, 33, 23, 0.32);
+  animation: victory-pop 0.55s cubic-bezier(0.2, 1.35, 0.4, 1) both;
+}
+
+.victory-kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+}
+
+.victory-title {
+  margin: 0;
+  font: 700 clamp(34px, 9vw, 52px)/1.15 "Songti SC", "Noto Serif SC", serif;
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+
+.victory-card[data-side="red"] .victory-title {
+  color: var(--red);
+  text-shadow: 0 0 26px rgba(166, 43, 35, 0.35);
+}
+
+.victory-card[data-side="black"] .victory-title {
+  color: var(--black);
+  text-shadow: 0 0 26px rgba(46, 52, 64, 0.32);
+}
+
+.victory-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.victory-close {
+  margin-top: 14px;
+  padding: 11px 24px;
+  font-size: 14px;
+}
+
+@keyframes victory-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes victory-pop {
+  from { opacity: 0; transform: scale(0.68) translateY(14px); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes victory-pulse {
+  0%, 100% { transform: scale(0.86); opacity: 0.5; }
+  50% { transform: scale(1.14); opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .victory,
+  .victory-glow,
+  .victory-card {
+    animation: none;
+  }
 }
 
 @media (max-width: 880px) {

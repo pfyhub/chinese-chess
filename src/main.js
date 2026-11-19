@@ -42,6 +42,7 @@ let aiToken = 0;
 let aiTimer = null;
 let reviewPly = null;
 let hasActiveMatch = false;
+let lastStatus = null;
 
 const canvas = document.getElementById("board");
 const els = {
@@ -76,6 +77,12 @@ const els = {
   reviewCurrent: document.getElementById("review-current"),
   moveList: document.getElementById("move-list"),
   emptyNotation: document.getElementById("empty-notation"),
+  victory: document.getElementById("victory"),
+  victoryCard: document.getElementById("victory-card"),
+  victoryKicker: document.getElementById("victory-kicker"),
+  victoryTitle: document.getElementById("victory-title"),
+  victorySub: document.getElementById("victory-sub"),
+  victoryClose: document.getElementById("victory-close"),
 };
 
 function clearSelection() {
@@ -244,6 +251,51 @@ function renderNotation() {
   }
 }
 
+const WIN_REASON = {
+  checkmate: "将死 · 无路可走",
+  stalemate: "困毙 · 无子可动",
+  kingcaptured: "将帅被擒",
+  perpetualcheck: "长将判负",
+  perpetualchase: "长捉判负",
+};
+
+function hideVictory() {
+  els.victory.hidden = true;
+}
+
+function showVictory() {
+  const redWins = game.winner === RED;
+  const winner = redWins ? "红方" : "黑方";
+  const checkmate = game.status === "checkmate";
+
+  els.victoryCard.dataset.side = redWins ? "red" : "black";
+  els.victoryKicker.textContent = checkmate ? "绝 杀" : "胜 局";
+  els.victoryTitle.textContent = `${winner}胜`;
+  els.victorySub.textContent = WIN_REASON[game.status] || "";
+  els.victory.hidden = false;
+
+  // 重放入场动画（同一局内可能连续出现）
+  els.victoryCard.style.animation = "none";
+  void els.victoryCard.offsetWidth;
+  els.victoryCard.style.animation = "";
+}
+
+/* 只在“进行中 → 分出胜负”的那一刻触发特效 */
+function syncOutcome() {
+  if (lastStatus === null) {
+    lastStatus = game.status;
+    return;
+  }
+  if (game.status === lastStatus) return;
+
+  if (game.status !== "playing" && game.status !== "draw") {
+    showVictory();
+  } else {
+    hideVictory();
+  }
+  lastStatus = game.status;
+}
+
 function refresh() {
   let state = game;
   if (reviewPly !== null) {
@@ -263,6 +315,7 @@ function refresh() {
   updatePanel(state);
   els.debugToggle.disabled = reviewing;
   renderNotation();
+  syncOutcome();
 }
 
 function saveCurrentMatch() {
@@ -504,6 +557,7 @@ els.newGame.addEventListener("click", () => {
 
 els.changeMode.addEventListener("click", () => {
   cancelAi();
+  hideVictory();
   reviewPly = null;
   clearSelection();
   els.startDifficulty.value = currentDifficulty;
@@ -576,6 +630,15 @@ els.debugToggle.addEventListener("change", () => {
   refresh();
 });
 
+els.victoryClose.addEventListener("click", () => {
+  hideVictory();
+  els.newGame.click();
+});
+
+els.victory.addEventListener("click", (event) => {
+  if (event.target === els.victory) hideVictory();
+});
+
 window.addEventListener("pagehide", () => {
   if (!hasActiveMatch) return;
   saveMatch({ game, aiEnabled, difficulty: currentDifficulty });
@@ -604,8 +667,9 @@ if (restored.status === "ok") {
 
 updateModeUi();
 
-if (window.ResizeObserver && canvas.parentElement) {
-  new ResizeObserver(() => refresh()).observe(canvas.parentElement);
+const boardHost = canvas.closest(".board-wrap");
+if (window.ResizeObserver && boardHost) {
+  new ResizeObserver(() => refresh()).observe(boardHost);
 }
 
 refresh();
