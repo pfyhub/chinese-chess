@@ -1,0 +1,645 @@
+:root {
+  --bg: #f4efe5;
+  --panel: #fffcf5;
+  --ink: #2b2117;
+  --muted: #7a6a55;
+  --line: #e3d6c0;
+  --red: #a62b23;
+  --black: #2e3440;
+  --accent: #b07a33;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  /* 防止页面整体滚动回弹干扰游戏交互 */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* 适配全面屏安全区 */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* 全局禁止用户选择，避免长按选中文字干扰走子 */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+.board-wrap {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+canvas {
+  display: block;
+  border-radius: 16px;
+  /* 阻止浏览器默认触摸滚动/缩放，让走子操作精准触发 */
+  touch-action: none;
+  cursor: pointer;
+  margin: 0 auto;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.brand h1 {
+  margin: 0 0 4px;
+  font: 600 26px/1.3 "Songti SC", "Noto Serif SC", serif;
+  letter-spacing: 0.08em;
+}
+
+.brand p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.turn-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.turn-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: none;
+}
+
+.turn-card[data-turn="black"] .turn-dot {
+  background: var(--black);
+}
+
+.turn-card[data-turn="draw"] .turn-dot {
+  background: var(--muted);
+}
+
+.turn-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.turn-card[data-turn="red"] .turn-label {
+  color: var(--red);
+}
+
+.turn-card[data-turn="black"] .turn-label {
+  color: var(--black);
+}
+
+.turn-sub {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.stat span {
+  display: block;
+  font: 600 22px/1.2 "Inter", "PingFang SC", sans-serif;
+}
+
+.stat small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.captured {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.captured-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.captured-label {
+  width: 64px;
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 26px;
+}
+
+.chip {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px/1 "Songti SC", "Noto Serif SC", serif;
+  background: #f8edd2;
+  border: 1px solid currentColor;
+}
+
+.chip.red {
+  color: var(--red);
+}
+
+.chip.black {
+  color: var(--black);
+}
+
+.chip.hidden {
+  width: auto;
+  min-width: 42px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+}
+
+.chip.hidden.red {
+  color: var(--red);
+  background: #f7e4df;
+  border-color: var(--red);
+}
+
+.chip.hidden.black {
+  color: var(--black);
+  background: #e5e7eb;
+  border-color: var(--black);
+}
+
+.chip.empty {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 14px;
+  background: var(--ink);
+  color: #fffaf0;
+  font: 500 14px/1 "PingFang SC", "Microsoft YaHei", sans-serif;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #4a3826;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.debug {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug input {
+  accent-color: var(--accent);
+}
+
+.message {
+  min-height: 20px;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rules {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.rules summary {
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rules ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.rules li + li {
+  margin-top: 4px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(43, 33, 23, 0.48);
+}
+
+.start-card {
+  width: min(460px, 100%);
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(43, 33, 23, 0.2);
+}
+
+.start-card h1 {
+  margin: 0 0 6px;
+  font: 600 28px/1.3 "Songti SC", "Noto Serif SC", serif;
+  letter-spacing: 0.08em;
+}
+
+.start-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 22px 0 18px;
+}
+
+.mode-option {
+  display: block;
+  cursor: pointer;
+}
+
+.mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-option span {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #fffaf0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.mode-option strong {
+  font-size: 17px;
+}
+
+.mode-option small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.mode-option input:checked + span {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(176, 122, 51, 0.18);
+}
+
+.mode-option input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+select {
+  min-width: 108px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #fffaf0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: 13px "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.start-card .field {
+  margin-bottom: 18px;
+}
+
+.start-card > button {
+  width: 100%;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+button.secondary {
+  color: var(--ink);
+  background: #eee2cd;
+}
+
+button.secondary:hover {
+  background: #e3d3b6;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.start-actions button {
+  width: 100%;
+}
+
+.start-card .start-message {
+  min-height: 18px;
+  margin: 10px 0 0;
+  color: var(--red);
+  font-size: 12px;
+  text-align: center;
+}
+
+.notation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.notation-heading h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.notation-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.review-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.review-controls button {
+  padding: 8px 6px;
+  font-size: 12px;
+}
+
+.move-list {
+  max-height: 220px;
+  margin: 12px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.move-list li + li {
+  margin-top: 5px;
+}
+
+.move-entry {
+  width: 100%;
+  padding: 8px 9px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.move-entry:hover {
+  background: #f8edd2;
+}
+
+.move-entry.current {
+  background: #f8edd2;
+  border-color: var(--accent);
+}
+
+.move-main,
+.move-detail {
+  display: block;
+}
+
+.move-main {
+  font-size: 12px;
+}
+
+.move-detail {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.empty-notation {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: 1fr;
+    padding: 16px 12px 28px;
+    gap: 16px;
+  }
+
+  .panel {
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+    gap: 10px;
+  }
+}
+
+/* 手机竖屏（≤480px）：进一步压缩间距，按钮更大更易点 */
+@media (max-width: 480px) {
+  .app {
+    padding: 12px 8px 24px;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .turn-label {
+    font-size: 15px;
+  }
+
+  button {
+    padding: 14px 12px;
+    font-size: 15px;
+    min-height: 48px; /* 符合 Apple HIG 最小点击区域 */
+  }
+
+  .mode-option span {
+    min-height: 88px;
+    padding: 12px;
+  }
+
+  .mode-option strong {
+    font-size: 15px;
+  }
+
+  .mode-option small {
+    font-size: 11px;
+  }
+
+  .captured-label {
+    width: 52px;
+    font-size: 11px;
+  }
+
+  .chip {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .chip.hidden {
+    min-width: 36px;
+    font-size: 10px;
+  }
+}
+
+/* 超小屏（≤360px）：紧凑布局 */
+@media (max-width: 360px) {
+  .app {
+    padding: 8px 6px 20px;
+  }
+
+  .stats {
+    gap: 6px;
+  }
+
+  .stat {
+    padding: 10px;
+  }
+
+  .stat span {
+    font-size: 18px;
+  }
+
+  .review-controls button {
+    padding: 10px 4px;
+    font-size: 11px;
+  }
+}
+
+/* 横屏手机：棋盘占满宽度 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .panel {
+    gap: 8px;
+  }
+
+  .brand h1 {
+    font-size: 18px;
+  }
+}

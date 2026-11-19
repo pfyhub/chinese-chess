@@ -1,0 +1,16 @@
+# OS / editor junk
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# logs
+*.log
+
+# local screenshots
+screenshot*.png
+
+# 分享打包产物
+.trae-html-share-packages/
+
+# 图标生成脚本的中间输出（正式图标在 icons/）
+scripts/icons/

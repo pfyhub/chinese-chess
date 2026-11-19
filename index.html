@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#a62b23" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="象棋" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>象棋 · 单机 Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  </head>
+  <body>
+    <section
+      class="start-screen"
+      id="start-screen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="选择对局模式"
+    >
+      <div class="start-card">
+        <h1>象棋</h1>
+        <p>选择游戏模式和 AI 难度，红方先行。</p>
+
+        <div class="mode-options" role="group" aria-label="游戏模式">
+          <label class="mode-option">
+            <input type="radio" name="game-mode" value="jieqi" checked />
+            <span>
+              <strong>揭棋</strong>
+              <small>暗子随机盖放，按原位走法翻开</small>
+            </span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="game-mode" value="standard" />
+            <span>
+              <strong>常规象棋</strong>
+              <small>经典明子布局，士象遵循常规限制</small>
+            </span>
+          </label>
+        </div>
+
+        <label class="field">
+          AI 难度
+          <select id="start-difficulty">
+            <option value="normal">一般</option>
+            <option value="medium">中等</option>
+            <option value="hard">困难</option>
+          </select>
+        </label>
+
+        <div class="start-actions">
+          <button id="start-game" type="button">开始游戏</button>
+          <button id="continue-game" class="secondary" type="button" hidden>
+            继续当前对局
+          </button>
+        </div>
+        <p class="start-message" id="start-message" role="status"></p>
+      </div>
+    </section>
+
+    <main class="app">
+      <section class="board-wrap">
+        <canvas id="board" aria-label="象棋棋盘"></canvas>
+      </section>
+
+      <aside class="panel">
+        <header class="brand">
+          <h1 id="mode-title">揭棋</h1>
+          <p id="mode-subtitle">暗子按原位走法行棋，落子后翻开</p>
+        </header>
+
+        <section class="card turn-card" id="turn-card">
+          <span class="turn-dot" aria-hidden="true"></span>
+          <div>
+            <div class="turn-label" id="turn-label">红方走棋</div>
+            <div class="turn-sub" id="turn-sub">点选棋子查看可走位置</div>
+          </div>
+        </section>
+
+        <section class="stats">
+          <div class="stat" id="reveal-stat">
+            <span id="reveal-count">0</span>
+            <small>已翻子</small>
+          </div>
+          <div class="stat">
+            <span id="quiet-count">0</span>
+            <small>无吃子步</small>
+          </div>
+        </section>
+
+        <section class="card captured">
+          <div class="captured-row">
+            <span class="captured-label">红方吃子</span>
+            <div class="chips" id="captured-red"></div>
+          </div>
+          <div class="captured-row">
+            <span class="captured-label">黑方吃子</span>
+            <div class="chips" id="captured-black"></div>
+          </div>
+        </section>
+
+        <section class="card actions">
+          <div class="button-row">
+            <button id="new-game" type="button">新开一局</button>
+            <button id="change-mode" class="secondary" type="button">更换模式</button>
+          </div>
+          <button id="undo-move" class="secondary" type="button" disabled>悔棋</button>
+          <label class="field">
+            AI 难度
+            <select id="difficulty">
+              <option value="normal">一般</option>
+              <option value="medium">中等</option>
+              <option value="hard">困难</option>
+            </select>
+          </label>
+          <label class="debug">
+            <input type="checkbox" id="ai-toggle" checked />
+            人机对战（AI 执黑）
+          </label>
+          <label class="debug" id="debug-option">
+            <input type="checkbox" id="debug-toggle" />
+            调试：显示暗子真实身份
+          </label>
+        </section>
+
+        <section class="card notation">
+          <div class="notation-heading">
+            <h2>棋谱复盘</h2>
+            <span id="review-status">共 0 手</span>
+          </div>
+          <div class="review-controls">
+            <button id="review-start" class="secondary" type="button" disabled>开局</button>
+            <button id="review-prev" class="secondary" type="button" disabled>上一手</button>
+            <button id="review-next" class="secondary" type="button" disabled>下一手</button>
+            <button id="review-current" class="secondary" type="button" disabled>返回当前</button>
+          </div>
+          <ol class="move-list" id="move-list"></ol>
+          <p class="empty-notation" id="empty-notation">暂无走子</p>
+        </section>
+
+        <div class="message" id="message" role="status"></div>
+
+        <details class="card rules">
+          <summary>玩法要点</summary>
+          <ul id="rules-list">
+            <li>除将帅外，双方各 15 枚暗子随机盖在原始位置。</li>
+            <li>暗子第一步按所在位置的走法行走，走完翻开。</li>
+            <li>翻开的士可出九宫，象可过河。</li>
+            <li>暗子被吃后公开真实身份，并保留“暗”标记。</li>
+            <li>将死或困毙判负；三次重复、80 步无吃子判和。</li>
+            <li>连续将军不变着法判长将负，连续追捉同一子判长捉负。</li>
+            <li>人机模式下 AI 执黑，只能看到自己暗子的真实身份。</li>
+          </ul>
+        </details>
+      </aside>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+    <script>
+      /* Register Service Worker for offline-first PWA */
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {
+            /* Ignore — SW failures don't break the game */
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
