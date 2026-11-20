@@ -29,11 +29,7 @@ export function point(r, c) {
   return { x: PAD + c * CELL, y: PAD + r * CELL };
 }
 
-export function hitTest(canvas, clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  const x = ((clientX - rect.left) / rect.width) * BASE_W;
-  const y = ((clientY - rect.top) / rect.height) * BASE_H;
-
+export function hitTestPoint(x, y) {
   const c = Math.round((x - PAD) / CELL);
   const r = Math.round((y - PAD) / CELL);
   if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
@@ -44,16 +40,30 @@ export function hitTest(canvas, clientX, clientY) {
   return { r, c };
 }
 
-export function renderBoard(canvas, game, view) {
-  const ctx = canvas.getContext("2d");
-  fitCanvas(canvas, ctx);
+export function hitTest(canvas, clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return hitTestPoint(
+    ((clientX - rect.left) / rect.width) * BASE_W,
+    ((clientY - rect.top) / rect.height) * BASE_H,
+  );
+}
 
+// 绘制本体：调用方负责设置好变换（缩放/平移）
+export function drawBoard(ctx, game, view) {
   drawBackground(ctx);
   drawGrid(ctx);
   drawLastMove(ctx, game);
   drawCheck(ctx, game);
   drawPieces(ctx, game, view);
   drawSelection(ctx, game, view);
+}
+
+export function renderBoard(canvas, game, view) {
+  const ctx = canvas.getContext("2d");
+  const scale = fitCanvas(canvas, ctx);
+
+  drawBoard(ctx, game, view);
+  return scale;
 }
 
 function fitCanvas(canvas, ctx) {
@@ -70,6 +80,7 @@ function fitCanvas(canvas, ctx) {
   canvas.height = Math.round(BASE_H * scale * dpr);
 
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  return scale;
 }
 
 function roundedRect(ctx, x, y, w, h, r) {

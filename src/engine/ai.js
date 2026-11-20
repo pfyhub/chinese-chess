@@ -1,5 +1,6 @@
 import { OPPOSITE } from "./core.js";
-import { applyMove, getLegalMoves } from "./moves.js";
+import { applyMove, getLegalMoves, isInCheck } from "./moves.js";
+import { judgeRepetition } from "./repetition.js";
 
 export const AI_DIFFICULTIES = {
   normal: { label: "一般", depth: 2, timeLimit: 500 },
@@ -11,6 +12,36 @@ const VALUES = { K: 10000, R: 9, C: 4.5, H: 4, E: 2, A: 2, P: 1 };
 const HIDDEN_VALUE = 3.2;
 const MATE = 100000;
 const SEARCH_TIMEOUT = Symbol("search-timeout");
+
+// 重复局面惩罚：促使 AI 推进局面，而不是反复将军或来回挪子
+const REPEAT_PENALTY = 0.8;
+
+/**
+ * 预判这一手走完后的重复情况。
+ * repeats：该局面此前出现过几次；losing：这一手是否会构成长将/长捉判负。
+ */
+function inspectRepetition(game, move, color, rules) {
+  const next = applyMove(game.board, move).board;
+  const nextTurn = OPPOSITE[color];
+  const plies = game.positionCounts.get(game.positionKey(next, nextTurn)) || [];
+  const gaveCheck = isInCheck(next, nextTurn, rules);
+  let losing = false;
+
+  // 该局面此前出现过一次就足以判定循环性质：若这个循环会被判我方长将/长捉负，
+  // 提前换招，不必等到第三次重复真的发生
+  if (plies.length >= 1) {
+    const segment = game.history.slice(plies[0]).map((entry) => ({
+      mover: entry.mover,
+      gaveCheck: entry.gaveCheck,
+      chaseTargets: entry.chaseTargets,
+    }));
+    // 候选走法的捉子信息这里留空：只用于判定长将，长捉的情况不误判为输
+    segment.push({ mover: color, gaveCheck, chaseTargets: [] });
+    losing = judgeRepetition(segment).loser === color;
+  }
+
+  return { repeats: plies.length, losing };
+}
 
 // AI 只知道自己暗子的真实身份，对手暗子按平均价值估算。
 function pieceValue(piece, aiColor) {
@@ -105,6 +136,17 @@ export function chooseMove(game, color, options = {}) {
   let rootMoves = orderMoves(board, getLegalMoves(board, color, rules));
   if (rootMoves.length === 0) return null;
 
+  const repetition = new Map();
+  for (const move of rootMoves) {
+    repetition.set(move, inspectRepetition(game, move, color, rules));
+  }
+
+  // 会因长将判负的走法直接排除；若全部判负则保留候选，至少还能走子
+  const safeMoves = rootMoves.filter((move) => !repetition.get(move).losing);
+  if (safeMoves.length > 0) {
+    rootMoves = safeMoves;
+  }
+
   let bestMove = rootMoves[0];
 
   try {
@@ -115,16 +157,18 @@ export function chooseMove(game, color, options = {}) {
       for (const move of rootMoves) {
         checkDeadline(deadline);
         const next = applyMove(board, move).board;
-        const score = -search(
-          next,
-          OPPOSITE[color],
-          depth - 1,
-          -Infinity,
-          -alpha,
-          color,
-          rules,
-          deadline,
-        );
+        const penalty = repetition.get(move).repeats >= 1 ? REPEAT_PENALTY : 0;
+        const score =
+          -search(
+            next,
+            OPPOSITE[color],
+            depth - 1,
+            -Infinity,
+            -alpha,
+            color,
+            rules,
+            deadline,
+          ) - penalty;
         scored.push({ move, score });
         if (score > alpha) alpha = score;
       }

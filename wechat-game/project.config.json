@@ -1,0 +1,12 @@
+{
+  "appid": "touristappid",
+  "compileType": "game",
+  "projectname": "xiangqi-wechat-game",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": false,
+    "urlCheck": false,
+    "postcss": false
+  }
+}
